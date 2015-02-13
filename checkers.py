@@ -1,5 +1,7 @@
 from matplotlib import pyplot as plt
 from numpy import arange
+from matplotlib.pylab import cm
+import numpy as np
 import sys
 import string as s
 from random import sample
@@ -11,6 +13,7 @@ class piece:
 		self.n = nbr
 		self.id = player
 		self.king = kinged
+		self.moves = []
 
 	def move(self,new_x, new_y):
 		self.x, self.y = new_x, new_y
@@ -18,6 +21,32 @@ class piece:
 			self.king = True
 		if self.id == 2 and self.y == 1:
 			self.king = True
+
+	def find_moves(self, board):
+		moves, jumps = [], []
+
+		p1_dirs, p2_dirs = [(1,1), (-1,1)], [(1,-1), (-1,-1)]
+
+		if self.king:
+			dirs = p1_dirs+p2_dirs
+		elif self.id == 1:
+			dirs = p1_dirs
+		elif self.id == 2:
+			dirs = p2_dirs
+
+		for d in dirs:
+			if (self.x+d[0], self.y+d[1]) in board.layout:
+				if board.layout[(self.x+d[0], self.y+d[1])] is None:
+					moves.append(d)
+				else:
+					if (board.layout[(self.x+d[0], self.y+d[1])].id != self.id and
+						(self.x+2*d[0], self.y+2*d[1]) in board.layout and
+						board.layout[(self.x+2*d[0], self.y+2*d[1])] is None):
+						jumps.append((2*d[0],2*d[1]))
+		if jumps:
+			self.moves = jumps
+		else:
+			self.moves = moves
 
 	def printme(self):
 		print self.x, self.y, self.n
@@ -74,6 +103,10 @@ class player:
 	def move(self, piece_no, new_x, new_y):
 		self.p[piece_no-1].move(new_x, new_y)
 
+	def set_moves(self, board):
+		for p in self.p:
+			p.find_moves(board)
+
 	def print_piece(self, piece_no):
 		self.p[piece_no-1].printme()
 
@@ -104,213 +137,140 @@ class Board:
 					print (i, j), self.layout[(i, j)]
 
 	def show_board(self, player1, player2, turn):
-		x = arange(.5, 8.5, 1)
-		y = x
+		# Make a 8x8 grid...
+		nrows, ncols = 8,8
+		image = np.zeros(nrows*ncols)
 
-		fig = plt.figure()
-		ax = fig.gca()
+		# Set every other cell to a random number (this would be your data)
+		i, j, on = 0, 8, True
+		while j < 65:
+			for z in range(i, j):
+				if on:
+					if z%2:
+						image[z] = 1
+				else:
+					if not z%2:
+						image[z] = 1
 
-		ax.set_xticks(x, minor=True)
-		ax.set_xticks([i+.5 for i in x], minor=False)
-		ax.set_yticks(y, minor=True)
-		ax.set_yticks([i+.5 for i in y], minor=False)
+			i += 8
+			j += 8
+			on = not on
+		# Reshape things into a 9x9 grid.
+		image = image.reshape((nrows, ncols))
 
-		xlabels = list(s.uppercase)[:8]
-		ylabels = range(1,9)
+		row_labels = range(1,nrows+1)
+		col_labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']
+		plt.matshow(image, cmap=cm.gray, origin='lower')
+		plt.gca().xaxis.set_ticks_position('bottom')
+
 		if turn:
-			ax.set_xticklabels(xlabels)
-			ax.set_yticklabels(ylabels)
+			plt.xticks(range(ncols), col_labels)
+			plt.yticks(range(nrows), row_labels)
 		else:
-			ax.set_xticklabels(xlabels[::-1])
-			ax.set_yticklabels(ylabels[::-1])
-
-		ax.xaxis.grid(True, which='minor')
-		ax.yaxis.grid(True, which='minor')
-		plt.axis([0.5,8.5, 0.5,8.5])
-		
-
-		p1_xs, p1_ys = player1.get_xs(), player1.get_ys()
-		p2_xs, p2_ys = player2.get_xs(), player2.get_ys()
+			plt.xticks(range(ncols)[::-1], col_labels)
+			plt.yticks(range(nrows)[::-1], row_labels)
+	
+		p1_xs, p1_ys = [i-1 for i in player1.get_xs()], [i-1 for i in player1.get_ys()]
+		p2_xs, p2_ys = [i-1 for i in player2.get_xs()], [i-1 for i in player2.get_ys()]
 
 		if not turn:
-			p1_xs, p1_ys = [9-i for i in p1_xs], [9-i for i in p1_ys]
-			p2_xs, p2_ys = [9-i for i in p2_xs], [9-i for i in p2_ys]
+			p1_xs, p1_ys = [7-i for i in p1_xs], [7-i for i in p1_ys]
+			p2_xs, p2_ys = [7-i for i in p2_xs], [7-i for i in p2_ys]
 		
 		plt.scatter(p1_xs, p1_ys, c='red', s=3.14*12**2)
-		plt.scatter(p2_xs, p2_ys, c='black', s=3.14*12**2)
+		plt.scatter(p2_xs, p2_ys, c='lightgrey', s=3.14*12**2)
 
-		kings_xs = [p.x for p in player1.p if p.king]	
-		kings_xs += [p.x for p in player2.p if p.king]
-		kings_ys = [p.y for p in player1.p if p.king]	
-		kings_ys += [p.y for p in player2.p if p.king]
+		kings_xs = [p.x-1 for p in player1.p if p.king]	
+		kings_xs += [p.x-1 for p in player2.p if p.king]
+		kings_ys = [p.y-1 for p in player1.p if p.king]	
+		kings_ys += [p.y-1 for p in player2.p if p.king]
 		if not turn: 
-			kings_xs, kings_ys = [9-i for i in kings_xs], [9-i for i in kings_ys]
+			kings_xs, kings_ys = [7-i for i in kings_xs], [7-i for i in kings_ys]
 
 		plt.scatter(kings_xs, kings_ys, facecolors='none', edgecolors='w', marker='*', s=3.14*8**2)
 
 		plt.show()
 
+def move_piece(x_loc, y_loc, x_dest, y_dest, player, board, p2, auto):
+	pc = player.get_piece(x_loc, y_loc)
+	dest_dir = (x_dest-x_loc, y_dest-y_loc)
 
-def legal_checks(x_loc, y_loc, x_dest, y_dest, player, board, pc, auto):
-	
 	if pc is None:
 		if auto:
 			print "No piece at %s%s." % (rev_alpha[x_loc], y_loc)
 		return False
 
-	if (x_dest, y_dest) not in board.layout:
+	if dest_dir not in pc.moves:
 		if auto:
-			print "Invalid move. %s, %s is not on the board." (x_dest, y_dest)
+			print "Invalid move. Please select another move."
 		return False
+	
+	deuces = [(2,2), (-2,2), (-2,-2),(2,-2)]
+	if dest_dir in deuces:
+		i = (dest_dir[0]/2, dest_dir[1]/2)
 
-	if board.layout[(x_dest, y_dest)] is not None:
-		if auto:
-			print "Cannot move to %s%s. There's already a piece there." % (rev_alpha[x_dest], y_dest)
-		return False
+	mandatory_jumps = []
 
-	if (player.id == 1 and y_dest not in [y_loc+1, y_loc+2] and pc.king == False):
-		if auto:
-			print "Invalid move. Player 1 must move up."
-		return False
-
-	if (player.id == 2 and y_dest not in [y_loc-1, y_loc-2] and pc.king == False):
-		if auto:
-			print "Invalid move. Player 2 must move down."
-		return False
-
-	if x_dest not in [x_loc+1, x_loc-1, x_loc+2, x_loc-2]:
-		if auto:
-			print "Invalid move. Can only move left or right by 1 or 2 squares."
-		return False
-
-	if not abs(x_loc-x_dest)==abs(y_loc-y_dest):
-		if auto:
-			print "Invalid move. Horizontal & vertical distance must be the same."
-		return False 
-
-	if abs(x_loc-x_dest)==2 and abs(y_loc-y_dest)==2 and ((x_dest-x_loc)/2, (y_dest-y_loc)/2) not in nearby_opponent(pc, player, b):
-		if auto:
-			print (x_dest-x_loc, y_dest-y_loc)
-			print nearby_opponent(pc, player, b)
-			print "Invalid move. Can only move 2 squares when jumping opponent."
-		return False
-
-	p1_dirs, p2_dirs = [(1,1), (-1,1)], [(1,-1), (-1,-1)]
-
-	if pc.king:
-		dirs = p1_dirs+p2_dirs
-	elif player.id == 1:
-		dirs = p1_dirs
-	elif player.id == 2:
-		dirs = p2_dirs
-
-	for d in dirs:
-		if ((x_dest == x_loc+2*d[0] and y_dest == y_loc+2*d[1]) and
-			(pc.x+d[0], pc.y+d[1]) in board.layout and 
-			board.layout[(pc.x+d[0], pc.y+d[1])] is not None and
-			board.layout[(pc.x+d[0], pc.y+d[1])].id == player.id):
+	for p in player.p:
+		if any([d in p.moves for d in deuces]):
+			mandatory_jumps.append(p)
+	
+	if mandatory_jumps:
+		if pc not in mandatory_jumps:
 			if auto:
-				print "Invalid move. Cannot jump your own piece."
+				print "Invalid move. Must jump when possible."
 			return False
+		else:
+			if x_dest == x_loc+2*i[0] and y_dest == y_loc+2*i[1]:
+				p2.remove_pc(x_loc+i[0], y_loc+i[1])
+				board.remove_pc(x_loc+i[0], y_loc+i[1])
+				print "Piece jumped at %s%s." % (rev_alpha[x_loc+i[0]], y_loc+i[1])
 
-	return True
+			else:
+				print "Invalid move. Must jump nearby opponent."
+				return False
 
-def move_piece(x_loc, y_loc, x_dest, y_dest, player, board, p2, auto):
-	p = player.get_piece(x_loc, y_loc)
-	
-	if not legal_checks(x_loc, y_loc, x_dest, y_dest, player, board, p, auto):
-		return False
-
-	check = nearby_opponent(p, player, board)	
-	if check:
-		j=jump(player, check, x_loc, y_loc, x_dest, y_dest, p2, board)
-		if j==False:
-			return j
-
-	p.move(x_dest, y_dest)
+	pc.move(x_dest, y_dest)
 	board.layout[(x_loc, y_loc)] = None
-	board.layout[(x_dest, y_dest)] = p
+	board.layout[(x_dest, y_dest)] = pc
+	player.set_moves(board)
+	p2.set_moves(board)
 	return True
 
-def jump(player, check, x_loc, y_loc, x_dest, y_dest, p2, board):
-
-	for i in check:
-		if x_dest == x_loc+2*i[0] and y_dest == y_loc+2*i[1]:
-			p2.remove_pc(x_loc+i[0], y_loc+i[1])
-			board.remove_pc(x_loc+i[0], y_loc+i[1])
-			return True
-
+def init_game(ct):
+	if ct == 2:
+		p1 = player(raw_input("Who is player 1? "), 1)
+		p2 = player(raw_input("Who is player 2? "), 2)
+	elif ct == 1:
+		p1, p2 = player(raw_input("What is your name? "), 1), player('CPU', 2)
 	else:
-		print "Invalid move. Must jump nearby opponent."
-		return False
+		print "Can only play with 1 or 2 players."
+		sys.exit()
 
-
-def nearby_opponent(pc, player, board):
-	neighbors = []
-	p1_dirs, p2_dirs = [(1,1), (-1,1)], [(1,-1), (-1,-1)]
-
-	if pc.king:
-		dirs = p1_dirs+p2_dirs
-	elif player.id == 1:
-		dirs = p1_dirs
-	elif player.id == 2:
-		dirs = p2_dirs
-
-	for d in dirs:
-		if ((pc.x+d[0], pc.y+d[1]) in board.layout and 
-			board.layout[(pc.x+d[0], pc.y+d[1])] is not None and
-			board.layout[(pc.x+d[0], pc.y+d[1])].id != player.id and
-			(pc.x+2*d[0], pc.y+2*d[1]) in board.layout and
-			board.layout[(pc.x+2*d[0], pc.y+2*d[1])] is None):
-
-			neighbors.append(d)
-
-	return neighbors
-
-def legals(pc, player, board):
-	legals = []
-	p1_dirs = [(1,1), (2,2), (-1,1), (-2,2)]
-	p2_dirs = [(1,-1), (2,-2), (-1,-1), (-2,-2)]
-
-	if pc.king:
-		dirs = p1_dirs+p2_dirs
-	elif player.id == 1:
-		dirs = p1_dirs
-	elif player.id == 2:
-		dirs = p2_dirs
-
-	for d in dirs:
-		if ((pc.x+d[0], pc.y+d[1]) in board.layout and 
-			board.layout[(pc.x+d[0], pc.y+d[1])] is None):
-
-			legals.append(d)
-	
-	return legals
-
-ct = int(raw_input("Welcome to Checkers! Is this a 1 or 2 player game? "))
-
-def init_game():
-	p1 = player(raw_input("Who is player 1? "), 1)
-	p2 = player(raw_input("Who is player 2? "), 2)
+	b = Board(p1, p2)	
+	p1.set_moves(b)
+	p2.set_moves(b)
 
 	print "Let's play!"
-	return (Board(p1, p2), p1, p2)
-
-if ct == 2:
-	b, p1, p2 = init_game()
-else:
-	p1, p2 = player(raw_input("What is your name? "), 1), player('CPU', 2)
-	b = Board(p1,p2)
-
-p1_turn = True
+	return (b, p1, p2)
 
 alpha = dict (zip(list(s.uppercase)[:8], range(1,9)))
 rev_alpha = dict (zip(alpha.values(), alpha.keys()))
 
-while(len(p1.p) > 0 and len(p2.p) > 0):
-	b.show_board(p1, p2, p1_turn)
+
+ct = int(raw_input("Welcome to Checkers! Is this a 1 or 2 player game? "))
+
+b, p1, p2 = init_game(ct)
+p1_turn = True
+
+while(len(p1.p) > 0 and len(p2.p) > 0 and any([p.moves for p in p1.p]) and any([p.moves for p in p2.p])):
+
+	p1.set_moves(b)
+	p2.set_moves(b)
 
 	if ct == 2 or p1_turn:
+		b.show_board(p1, p2, p1_turn)
+		
 		if p1_turn:
 			n = 1
 		else:
@@ -329,7 +289,6 @@ while(len(p1.p) > 0 and len(p2.p) > 0):
 		for i in range(1, len(m)):
 			pairs.append([m[i-1], m[i]])
 
-
 		for pair in pairs:
 			m = list(pair[0]) + list(pair[1])
 			if p1_turn:
@@ -347,25 +306,20 @@ while(len(p1.p) > 0 and len(p2.p) > 0):
 					m = list(m[0]) + list(m[1])
 
 	else:
+		b.show_board(p1, p2, True)
 		iters = [x for x in sample(p2.p, len(p2.p))]
 		done = False
 		for pc in iters:
 			if done:
 				break
-			moves = legals(pc, p2, b)
-			for move in moves:
-				if (not legal_checks(pc.x, pc.y, pc.x+move[0], pc.y+move[1], p2, b, pc, False) or
-					(move in [(2,2),(-2,-2)] and move not in nearby_opponent(pc, p2, b))):
-					moves.remove(move)
-			iters2 = [x for x in sample(moves, len(moves))]
+			iters2 = [x for x in sample(pc.moves, len(pc.moves))]
 			for move in iters2:
 				if not done:
-					if not move_piece(pc.x, pc.y, pc.x+move[0], pc.y+move[1], p2, b, p1, False):
+					if not move_piece(pc.x, pc.y, pc.x+move[0], pc.y+move[1], p2, b, p1, True):
 						continue
-					else:
-						done = True
-						print "CPU moved from %s%s to %s%s." %(rev_alpha[pc.x-move[0]], pc.y-move[1], rev_alpha[pc.x], pc.y)
-						break
+					done = True
+					print "CPU moved from %s%s to %s%s." %(rev_alpha[pc.x-move[0]], pc.y-move[1], rev_alpha[pc.x], pc.y)
+					break
 
 	p1_turn = not p1_turn
 
