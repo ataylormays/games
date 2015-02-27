@@ -1,20 +1,27 @@
-public class ship {
+public class Ship {
 	char orientation;
 	int squares;
 	String name;
+	boolean sunk;
 
-	public void printShip(){
-		System.out.println("Name: " + name);
-		System.out.println("Orientation: " + orientation);
-		System.out.println("Number of squares: " + squares);
+	public Ship(){
+		sunk = false;
 	}
 
-	public void setOrtn(char o){
-		if (o != 'H' && o != 'V'){
-			System.out.println("Must set orientation to H or V");
+	public void printShip(){
+		System.out.println("Ship name: " + name);
+		System.out.println("Squares: " + squares);
+		System.out.println("Orientation: " + orientation);
+	}
+
+	public void setOrtn(char o) {
+		System.out.println("HERE");
+		if (!(o == 'H' || o == 'V')){
+			System.out.println("Orientation must be set to either V or H.");
 			System.exit(0);
-		} else{
+		} else {
 			orientation = o;
 		}
+
 	}
 }
