@@ -26,6 +26,5 @@ public class Board {
 				getSquare(i, j).printSquare();
 			}
 		}
-		System.out.println("exiting printBoard");
 	}
 }

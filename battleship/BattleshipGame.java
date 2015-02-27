@@ -14,7 +14,7 @@ public class BattleshipGame {
 		b.printBoard();
 		aaron.p.setOrtn('H');
 		aaron.setShip(aaron.p, b, 1, 1);
-		b.printBoard();
+		aaron.p.printShip();
 	}
 
 }
