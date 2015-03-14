@@ -137,11 +137,11 @@ class Board:
 					print (i, j), self.layout[(i, j)]
 
 	def show_board(self, player1, player2, turn):
-		# Make a 8x8 grid...
+		# make an 8x8 grid...
 		nrows, ncols = 8,8
 		image = np.zeros(nrows*ncols)
 
-		# Set every other cell to a random number (this would be your data)
+		# set every other cell to 1
 		i, j, on = 0, 8, True
 		while j < 65:
 			for z in range(i, j):
@@ -155,7 +155,7 @@ class Board:
 			i += 8
 			j += 8
 			on = not on
-		# Reshape things into a 9x9 grid.
+		# reshape  into an 8x8 grid
 		image = image.reshape((nrows, ncols))
 
 		row_labels = range(1,nrows+1)

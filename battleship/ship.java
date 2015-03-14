@@ -3,6 +3,7 @@ public class Ship {
 	int[] xs;
 	int[] ys;
 	int squares;
+	int hits;
 	String name;
 	boolean sunk;
 
@@ -13,6 +14,7 @@ public class Ship {
 	public void printShip(){
 		System.out.println("Ship name: " + name);
 		System.out.println("Squares: " + squares);
+		System.out.println("Hits: " + hits);
 		System.out.println("Orientation: " + orientation);
 		for(int i = 0; i < xs.length; i++){
 			System.out.println(xs[i] + "-" + ys[i]);
@@ -27,6 +29,15 @@ public class Ship {
 		ys = y;
 	}
 
+
+	public void hit(){
+		hits++;
+		System.out.println("Hit!");
+		if(hits==squares){
+			sunk = true;
+			System.out.println("SUNK!");
+		}	
+	}
 
 	public void setOrtn(char o) {
 		if (!(o == 'H' || o == 'V')){
