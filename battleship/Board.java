@@ -16,15 +16,14 @@ public class Board {
 	}
 
 	public void printBoard(){
-		for(int i = 0; i < 10; i++){
-			for(int j = 0; j < 10; j++){
-				getSquare(i, j).printSquare();
-			}
+		System.out.print("  ");
+		for(int k = 0; k < 10; k++){
+			System.out.print(k + " ");
 		}
-	}
 
-	public void printBoard2(){
+		System.out.println("\n");
 		for(int j = 0; j < 10; j++){
+			System.out.print(j + " ");
 			for(int i = 0; i < 10; i++){
 				System.out.print(getSquare(i, j).status + " ");
 			}

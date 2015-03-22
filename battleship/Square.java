@@ -8,16 +8,16 @@ public class Square {
 	public Square(int xCoor, int yCoor){
 		x = xCoor;
 		y = yCoor;
-		status = 'X';
+		status = '-';
 		free = true;
 	}
 
 	public void hit(){
-		status = 'H';
+		status = 'X';
 	}
 
 	public void miss(){
-		status = 'M';
+		status = 'O';
 		System.out.println("Miss!");
 	}
 	

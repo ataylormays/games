@@ -1,8 +1,8 @@
 public class BoundedQueue{
 	private int numElts = 0;
 	private int head = 0;
-	private int tail = 0;
-	public Shot[] array = new Shot[4];
+	private int tail = 4;
+	public Shot[] array = new Shot[5];
 
 	public BoundedQueue(){
 		for(int i = 0; i < array.length; i++){
@@ -19,10 +19,13 @@ public class BoundedQueue{
 			array[array.length-1] = elt;
 		}
 		else {
-			array[tail] = elt;
-			tail = (tail + 1) % array.length;
+			for(int i = tail+1; i < array.length; i++){
+				array[i-1] = array[i];
+			}
+			array[array.length-1] = elt;
+			tail--;
 		}
-		if(numElts < 4){
+		if(numElts < 5){
 			numElts++;
 		}
 	}
